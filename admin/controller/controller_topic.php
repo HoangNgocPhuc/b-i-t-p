@@ -3,9 +3,11 @@
 	/**
 	* 
 	*/
-	class controller_faculty_upload_excel extends controller
+	ob_start();
+	class controller_topic extends controller
 	{
 		public $data;		
+		public $deal;
 		function __construct()
 		{
 			# code...
@@ -14,7 +16,7 @@
 			require 'controller/PHPMailer/class.smtp.php';
 			parent::__construct();
 		}
-		// function set file excel
+		//read file
 		public function get_file($value='')
 		{
 			# code...
@@ -23,6 +25,12 @@
 					$t = time();
 					move_uploaded_file($_FILES['file-excel']['tmp_name'], 'public/Excel/'.$t.$_FILES["file-excel"]["name"]);
 					$this->data = 'public/Excel/'.$t.$_FILES["file-excel"]["name"];
+					
+					$this->deal = $_POST["date"];
+					$time = strtotime($_POST["date"]);
+				 	
+					setcookie('deadline','1', $time, "/");
+					
 				}
 			}
 		}
@@ -55,31 +63,30 @@
 			                                    TRUE,
 			                                    FALSE);
 			    //  Insert row data array into your database of choice here
-			    if (isset($_POST["teacher"])){
+			    if (isset($_POST["submit"])){
+				   	// foreach ($rowData as $rowDataChild) {
+				   	// 	# code...
+				   	// 	$code = $rowDataChild[0];
+				   	// 	//kiểm tra xem đã có giáo viên đó trong database chưa
+				   	// 	if ($this->model->num_rows("select name from teacher where pk_code_teacher_id='$code'") == 0){
+				   	// 		// chèn giáo viên đó vào database
+				   	// 		$pass = md5($code);
+				   	// 		$email = $rowDataChild[3];
+				   	// 		$this->send_mail($code,$code,$email);
+				   	// 		$this->model->execute("insert into teacher(pk_code_teacher_id,name,major,mail,password) VALUES('$rowDataChild[0]','$rowDataChild[1]','$rowDataChild[2]','$rowDataChild[3]','$pass')");
+				   	// 	}
+				   	// }
 				   	foreach ($rowData as $rowDataChild) {
 				   		# code...
 				   		$code = $rowDataChild[0];
-				   		//kiểm tra xem đã có giáo viên đó trong database chưa
-				   		if ($this->model->num_rows("select name from teacher where pk_code_teacher_id='$code'") == 0){
-				   			// chèn giáo viên đó vào database
-				   			$pass = md5($code);
-				   			$email = $rowDataChild[3];
-				   			$this->send_mail($code,$code,$email);
-				   			$this->model->execute("insert into teacher(pk_code_teacher_id,name,major,mail,password) VALUES('$rowDataChild[0]','$rowDataChild[1]','$rowDataChild[2]','$rowDataChild[3]','$pass')");
-				   		}
-				   	}
-				}
-				if (isset($_POST["student"])){
-					foreach ($rowData as $rowDataChild) {
-				   		# code...
-				   		$code = $rowDataChild[0];
 				   		//kiểm tra xem đã có sinh vien đó trong database chưa
-				   		if ($this->model->num_rows("select name from student where pk_code_student_id='$code'") == 0){
+				   		if ($this->model->num_rows("select name from topic where pk_code_student_id='$code'") == 0){
 				   			// chèn sinh vien đó vào database
-				   			$pass = md5($code);
 				   			$email = $rowDataChild[4];
-				   			$this->send_mail($code,$code,$email);
-				   			$this->model->execute("insert into student(pk_code_student_id,name,grade,course,mail,password) VALUES('$rowDataChild[0]','$rowDataChild[1]','$rowDataChild[2]','$rowDataChild[3]','$rowDataChild[4]','$pass')");
+				   			$this->send_mail($email);
+				   			$this->model->execute("insert into topic(pk_code_student_id, name, mail) 
+				   									VALUES('$rowDataChild[0]', '$rowDataChild[1]', '$rowDataChild[4]')");
+				   			
 				   		}
 				   	}
 				}
@@ -87,7 +94,7 @@
 		}
 
 		//auto send mail
-		public function send_mail($username,$pass,$email)
+		public function send_mail($email)
 		{
 			// Khai báo tạo PHPMailer
 			$mail = new PHPMailer();
@@ -111,7 +118,7 @@
 			$mail->AddReplyTo("laylaifb36@gmail.com","Admin");// Ấn định email sẽ nhận khi người dùng reply lại.
 			$mail->AddAddress("$email");//Email của người nhận
 			$mail->Subject = "Kích hoạt tài khoản"; //Tiêu đề của thư
-			$mail->MsgHTML("Username: " . $username ."<br>"."Password: ". $pass . "<br>". "Bạn hãy truy cập vào link sau đăng nhập và cập nhật tài khoản: http://localhost/PHUC/b-i-t-p/"); //Nội dung của bức thư.
+			$mail->MsgHTML("Ban hãy vào đăng ký đề tài. Hạn cuối sẽ là 0h " . $this->deal); //Nội dung của bức thư.
 			//$mail->MsgHTML(file_get_contents("view/form_send_mail.php"), dirname(__FILE__));
 			// Gửi thư với tập tin html
 			$mail->AltBody = "Bạn mở file và làm theo hướng dẫn";//Nội dung rút gọn hiển thị bên ngoài thư mục thư.
@@ -123,10 +130,11 @@
 			}
 		}
 	}
-	include("view/view_faculty_upload_excel.php");
-	$a = new controller_faculty_upload_excel();
+	include("view/view_register_topic.php");
+	$a = new controller_topic();
 	$a->get_file();
 	if ($a->data !="" ){
 		$a->read_excel();
 	}
+	ob_end_flush();
 ?>	
